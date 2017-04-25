@@ -2,9 +2,10 @@
 JSONURL = ""
 try:
     import browser
-    JSONURL = '/'.join(browser.window.location['href'].split['/'][:-1]) + '/data/courselist.json'
+    JSONURL = '/'.join(browser.window.location.href.split('/')[:-1]) + '/data/courselist.json'
 
 except Exception as e:
+    print('failure obtaining window location: ' + str(e))
     JSONURL = r"http://localhost:8000/data/courselist.json"
 
 import urllib.request
