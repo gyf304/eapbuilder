@@ -1,0 +1,300 @@
+<html>
+
+<head>
+<link rel="stylesheet" href="3rdparty/css/bootstrap.min.css">
+<link rel="stylesheet" href="css/modal.css">
+<link rel="stylesheet" href="css/main.css">
+<script src="3rdparty/js/jquery-3.2.1.min.js"></script>
+<script src="3rdparty/js/bootstrap.min.js"></script>
+<script src="3rdparty/js/brython.js"></script>
+<script src="3rdparty/js/brython_stdlib.js"></script>
+<script src="3rdparty/js/vue.js"></script>
+</head>
+<body onload="init()">
+<script type="text/python" src="py/main.py"></script>
+<script type=type="text/x-template" id="modal-template">
+    <transition name="modal">
+    <div class="modal-mask">
+        <div class="modal-wrapper">
+        <div class="modal-container">
+
+            <div class="modal-header">
+            <slot name="header">
+            </slot>
+            </div>
+
+            <div class="modal-body">
+            <slot name="body">
+            </slot>
+            </div>
+
+            <div class="modal-footer">
+            <slot name="footer">
+                <button class="modal-default-button" @click="$emit('close')">
+                OK
+                </button>
+            </slot>
+            </div>
+        </div>
+        </div>
+    </div>
+    </transition>
+</script>
+
+<div id="snackbar"></div>
+
+<div id="app">
+<nav class="navbar navbar-default navbar-fixed-top">
+  <div class="container-fluid">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">EAP Builder</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-right">
+            <li v-if="stateIndex>0 && ready" v-on:click="stateIndex--"><a href="#">Back</a></li>
+            <li v-if="stateIndex<states.length-1 && ready" v-on:click="stateIndex++"><a href="#">Next</a></li>
+        </ul>
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+<div class="container" v-if="stateIndex==0">
+    <div class="jumbotron">
+    <h1>Welcome!</h1>
+    <p>Through this wizard, you will be able to painlessly create EAP reports!</p>
+    <p>If you don't see the next button above. Please wait a few seconds for initialization.</p>
+    </div>
+    <button id="show-modal" @click="showModal = true">Show Modal</button>
+     <modal v-if="showModal" @close="showModal = false">
+    <!--
+      you can use custom content here to overwrite
+      default content
+    -->
+    <div slot="body">
+     body
+    </div>
+    <h3 slot="header">My header</h3>
+  </modal>
+</div>
+
+<div class="container" v-if="stateIndex==1">
+    <div class="container">
+        <textarea id="audit-in" v-model="auditInput" class="form-control" rows="20" style="font-family: Courier New, Courier, monospace; width:100%"></textarea>
+        <p>Audits loaded: {{audits.length}}</p>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-danger" v-on:click="auditInput=''">Clear</button>
+            <button type="button" class="btn btn-default" id="load-audit-button" v-on:click="processAuditInput(auditInput); auditInput=''; snackbar('Audit Loaded')">Load Audit</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" v-if="stateIndex==2">
+    <modal v-if="eapModifyInfo.show" @close="eapModifyInfo.show = false">
+        <div slot="body">
+            <div>
+                <div>
+                    <div class="input-group">
+                        <span class="input-group-addon">#</span>
+                        <input type="text" class="form-control" placeholder="Course Number" v-model="auditModifyInfo.fields.course_number.value">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon">Name</span>
+                        <input type="text" class="form-control" placeholder="Course Name" v-model="auditModifyInfo.fields.course_name.value">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon">Grade</span>
+                        <select class="form-control" v-model="auditModifyInfo.fields.grade.value">
+                        <option v-for="g in auditConstants.grades">{{g}}</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon">Units</span>
+                        <input type="text" class="form-control" placeholder="15" v-model="auditModifyInfo.fields.units.value"> 
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon">Semester</span>
+                        <select class="form-control" v-model="auditModifyInfo.fields.instance.value.semester">
+                            <option v-for="s in auditConstants.semesters">{{s}}</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-addon">Year</span>
+                        <input type="text" class="form-control" placeholder="15" v-model="auditModifyInfo.fields.instance.value.year">
+                    </div>
+                </div>
+                <div style="padding-top:15px">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Course Info</div>
+                        <div class="panel-body">
+                            <p>
+                                {{courses[auditModifyInfo.fields.course_number.value] ? courses[auditModifyInfo.fields.course_number.value].course_name + ' , ' + courses[auditModifyInfo.fields.course_number.value].units + ' Units.' : 'Course number Invalid or not found'}}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="panel panel-default" v-if="getCourseModifyModalErrors().length>0">
+                        <div class="panel-heading">Errors</div>
+                        <div class="panel-body">
+                            <p v-for="error in getCourseModifyModalErrors()">
+                                {{error}}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        <div slot="footer">
+            <button type="button" class="btn btn-default" v-bind:class="{'disable' : getCourseModifyModalErrors().length > 0}" v-on:click="modifyCourseFromModal() ? snackbar('Modify Success') : snackbar('Modify Fail')">Modify</button>
+            <button type="button" class="btn btn-default" v-on:click="hideModifyCourseModal()">Close</button>
+        </div>
+        <h3 slot="header">Modify Course Info</h3>
+    </modal>
+
+    <div class="panel panel-default" v-for="(audit, auditIndex) in audits">
+        <div class="panel-heading">Audit No. {{auditIndex+1}}</div>
+        <div class="panel-body no-print">
+            This is a auto-generated table from your audit. You can add future courses on this page.
+        </div>
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>Course Number</th>
+                <th>Course Name</th>
+                <th>Semester</th>
+                <th>Year</th>
+                <th>Grade</th>
+                <th>Units</th>
+                <th><span class="no-print">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody v-for="(category, categoryIndex) in audit">
+                <tr>
+                    <th colspan="3">
+                        {{category.id}}. {{category.description}} 
+                    </th>
+                    <td colspan="3">
+                        {{category.courses.length}}/{{category.total}} furfilled.
+                    </td>
+                    <td colspan="2" style="text-align:center"><button type="button" class="btn btn-default btn-xs no-print" v-on:click="addDummyCourse(auditIndex, categoryIndex)">+</button></td>
+                </tr>
+                <tr v-for="(course, courseIndex) in category.courses">
+                    <td>{{course.course_number}}</td>
+                    <td>{{course.course_name}}</td>
+                    <td>{{course.instance.semester}}</td>
+                    <td>{{course.instance.year}}</td>
+                    <td>{{course.grade}}</td>
+                    <td>{{course.units}}</td>
+                    <td>
+                        <span class="no-print">
+                            <button type="button" class="btn btn-default btn-xs no-print" v-on:click="showModifyCourseModal(auditIndex,categoryIndex,courseIndex)"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button type="button" class="btn btn-danger btn-xs no-print" v-on:click="deleteCourse(auditIndex, categoryIndex, courseIndex)"><span class="glyphicon glyphicon-remove"></span></button>
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="print-page" v-show="stateIndex==3">
+    <div id="eap-controls" class="no-print">
+        <button v-on:click="generate()">Update Form</button>
+        <button v-on:click="print()">Print</button>
+    </div>
+    <div id="eap" class="eap-form">
+        <div id="coverPage" style="margin-bottom:20px">
+            Carnegie Mellon University<br>
+            Department of Physics<br>
+            Academic Plan<br>
+            <table border="1" style="width:100%;">
+            <tr height="20px">
+                <th width="20%"></th>
+                <th width="20%">Name</th>
+                <th width="20%">Signature</th>
+                <th width="20%">Date</th>
+                <th width="20%">Email</th>
+            </tr>
+            <tr height="50px">
+                <td>Student:</td>
+                <td><textarea type="text"></textarea></td>
+                <td></td>
+                <td><textarea type="text"></textarea></td>
+                <td><textarea type="text"></textarea></td>
+            </tr>
+            <tr height="50px">
+                <td>Advisor:</td>
+                <td><textarea type="text"></textarea></td>
+                <td></td>
+                <td><textarea type="text"></textarea></td>
+                <td><textarea type="text"></textarea></td>
+            </tr>
+            <tr height="50px">
+                <td>Career Plans:</td>
+                <td colspan="4"><textarea></textarea></td>
+            </tr>
+            <tr height="50px">
+                <td>First Major: <br>Second Major: <br>Double Degree?</td>
+                <td colspan="4"><textarea></textarea></td>
+            </tr>
+            <tr height="50px">
+                <td>Track(s):</td>
+                <td colspan="4"><textarea type="text"></textarea></td>
+            </tr>
+            <tr height="50px">
+                <td>Minor(s):</td>
+                <td colspan="4"><textarea type="text"></textarea></td>
+            </tr>
+            </table>
+        </div>
+        <div class="eap-item" v-for="(item, itemIndex) in printData.items" v-bind:class="[item.newPage ? 'new-page' : '']" style="margin-bottom:20px">
+            <div class="panel panel-default no-print">
+                <div class="panel-body"> 
+                    
+                    <button class="btn btn-default" v-if="itemIndex>0" v-on:click="swapEapItems(itemIndex, itemIndex-1)">Move Up</button>
+                    <button class="btn btn-default" v-if="itemIndex<printData.items.length-1" v-on:click="swapEapItems(itemIndex, itemIndex+1)">Move Down</button>
+                    <button class="btn btn-danger" v-on:click="deleteEapItem(itemIndex)">Delete</button>
+                    <div class="checkbox">
+                        <label>
+                        <input type="checkbox" v-model="item.newPage"> Page break here.
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <table v-if="item.type=='2col'" border="1" style="width:100%;">
+                <tr>
+                    <th colspan="4">{{item.data.left.title}}</th>
+                    <th colspan="4">{{item.data.right.title}}</th>
+                </tr>
+                <tr>
+                    <th width="20%">Course Name</th>
+                    <th width="10%">Course Number</th>
+                    <th width="10%">Audit Ref. No.</th>
+                    <th width="10%">Units</th>
+                    <th width="20%">Course Name</th>
+                    <th width="10%">Course Number</th>
+                    <th width="10%">Audit Ref. No.</th>
+                    <th width="10%">Units</th>
+                </tr>
+                <tr v-for="line in zip(item.data.left.courses, item.data.right.courses)">
+                    <td>{{line[0] ? line[0].course_name : ''}}</td>
+                    <td>{{line[0] ? line[0].course_number : ''}}</td>
+                    <td><span v-if="line[0]"><p v-for="tag in line[0].tags">{{tag}}</p></span></td>
+                    <td>{{line[0] ? line[0].units : ''}}</td>
+                    <td>{{line[1] ? line[1].course_name : ''}}</td>
+                    <td>{{line[1] ? line[1].course_number : ''}}</td>
+                    <td><span v-if="line[1]"><p v-for="tag in line[1].tags">{{tag}}</p></span></td>
+                    <td>{{line[1] ? line[1].units : ''}}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+</div><!--app-->
+</body>
+<script src="js/main.js"></script>
+</html>
