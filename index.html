@@ -67,17 +67,6 @@
     <p>Through this wizard, you will be able to painlessly create EAP reports!</p>
     <p>If you don't see the next button above. Please wait a few seconds for initialization.</p>
     </div>
-    <button id="show-modal" @click="showModal = true">Show Modal</button>
-     <modal v-if="showModal" @close="showModal = false">
-    <!--
-      you can use custom content here to overwrite
-      default content
-    -->
-    <div slot="body">
-     body
-    </div>
-    <h3 slot="header">My header</h3>
-  </modal>
 </div>
 
 <div class="container" v-if="stateIndex==1">
