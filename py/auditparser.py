@@ -22,7 +22,7 @@ def parse_audit(audit):
         'id': 0, 
         'description': 'Unused', 
         'total': 0,
-        'totalHidden': False,
+        'totalHidden': True,
         'courses': []
     })
     for line in audit.splitlines():
@@ -32,6 +32,7 @@ def parse_audit(audit):
                 'id': int(mdes.group(1)), 
                 'description': mdes.group(2), 
                 'total': 0,
+                'totalHidden': False,
                 'courses': []
             })
         munused = re.match(UNUSED_PATTERN, line)
