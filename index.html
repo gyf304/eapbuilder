@@ -165,8 +165,8 @@
                         {{category.id}}. {{category.description}} 
                     </th>
                     <td colspan="3">
-                        {{category.courses.length}}<span v-show="!category.courses.totalHidden">/{{category.total}}</span> furfilled.
-                        <button class="no-print" v-on:click="category.courses.totalHidden=!category.courses.totalHidden">Hide/Unhide total</button>
+                        {{category.courses.length}}<span v-show="!category.totalHidden">/{{category.total}}</span> furfilled.
+                        <button class="no-print" v-on:click="category.totalHidden=!category.totalHidden">Hide/Unhide total</button>
                     </td>
                     <td colspan="2" style="text-align:center"><button type="button" class="btn btn-default btn-xs no-print" v-on:click="addDummyCourse(auditIndex, categoryIndex)">+</button></td>
                 </tr>
