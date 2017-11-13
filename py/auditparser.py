@@ -22,6 +22,7 @@ def parse_audit(audit):
         'id': 0, 
         'description': 'Unused', 
         'total': 0,
+        'totalHidden': False,
         'courses': []
     })
     for line in audit.splitlines():
